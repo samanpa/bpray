@@ -1,0 +1,33 @@
+Perlin Noise
+------------
+http://www.animeimaging.com/asp/PerlinNoise.aspx
+http://astronomy.swin.edu.au/~pbourke/texture/perlin/
+http://freespace.virgin.net/hugo.elias/models/m_perlin.htm
+
+libraries
+---------
+libSIMD : libsimd.sourceforge.net
+
+ray tracing tutorials
+---------------------
+simple tracer : http://www.ffconsultancy.com/free/ray_tracer/comparison.html
+more complex tracer : http://ompf.org/ray/sphereflake/
+
+
+papers
+-----s
+Optimizations :
+  http://www.gamedev.net/reference/articles/article324.asp
+  http://www.uni-koblenz.de/%7Ecg/publikationen/cp_raytrace.pdf
+  http://citeseer.ist.psu.edu/cache/papers/cs/25944/http:zSzzSzgraphics.cs.uni-sb.dezSz~waldzSzPublicationszSzEG2001_IRCRTzSzInteractiveRenderingWithCoherentRayTracing.pdf/wald01interactive.pdf
+
+metallic finishes:
+  http://www.neilblevins.com/cg_education/metal_and_refs/metal_and_refs.htm
+  http://rendermanacademy.com/docs/Fresnel.htm
+  
+
+bsp construction : http://www.mpi-sb.mpg.de/~havran/ARTICLES/sccg98.pdf
+bps traversal : http://www.cs.utah.edu/%7Ebes/papers/fastRT/paper-node12.html
+standard procedural Databases
+-----------------------------
+http://www.acm.org/tog/resources/SPD/

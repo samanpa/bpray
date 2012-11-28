@@ -1,0 +1,26 @@
+2006-02-11    <samanpa@genesis.lafayette.edu>
+
+	* src/bp_ini_lexerl.l, src/bp_ray.c, src/bp_script_parser.y, src/bp_script_lexer.l,
+	src/bp_ini_parser.y, src/bp_script.h, Makefile.am: Split parsing of ini and script files
+
+2006-02-11    <samanpa@genesis.lafayette.edu>
+	
+	* src/bp_io.c (bp_library_path_add1): Avoid storing duplicates in the Library_Path
+
+2006-01-23    <samanpa@genesis.lafayette.edu>
+
+	* src/bp_scene.c (bp_scene_draw_threaded): new function. 
+	(draw_scanlines): new function
+
+	* configure.in: add check for the posix threading library.
+
+	* src/bp_camera.c (bp_get_pixel_color): don't assume that only one caller of 
+	this function
+
+	* src/banna.c (main): Use GTimer to do timing instead of doing our own
+	time_diff
+
+2005-11-27    <samanpa@genesis.lafayette.edu>
+
+	* Makefile.am, Makefile.in: Include the lib dir in make dist.
+

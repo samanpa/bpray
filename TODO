@@ -1,0 +1,32 @@
+LIGHT
+-----
+shadow cache
+attenuation (Beer's law?)
+filtering
+area light
+
+SHADING
+-------
+metallic
+caustics
+
+
+uv-mapping
+----------
+normal mapping
+mip mapping
+bump mapping
+
+
+objects
+-------
+box
+cylinder
+
+
+- global_settings {
+        ambient_light <1, 1, 1>
+        max_trace_level 5
+        max_intersections 64
+        adc_bailout  1/255
+}
