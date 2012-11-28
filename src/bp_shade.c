@@ -1,4 +1,4 @@
-#include "shade.h"
+#include "bp_shade.h"
 
 static const float AIR_IOR   = 1.0003;
 

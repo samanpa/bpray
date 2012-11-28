@@ -27,7 +27,7 @@ parse_FILES		= bp_script.h bp_script_parser.y bp_script_lexer.l \
 
 material_FILES		= bp_pigment.h bp_pigment.c bp_texture.h bp_texture.c \
 	bp_material.c bp_material.h bp_image.h bp_image.c bp_normal.h bp_normal.c \
-	bp_perlin_noise.c bp_noise.h shade.c shade.h
+	bp_perlin_noise.c bp_noise.h bp_shade.c bp_shade.h
 
 object_FILES		= bp_light.c bp_light.h bp_object.h bp_object.c \
 	bp_triangle.c bp_sphere.h bp_sphere.c bp_box.h bp_box.c mesh.h mesh.c \

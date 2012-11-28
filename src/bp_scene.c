@@ -1,7 +1,7 @@
 #include "bp_scene.h"
 #include "bp_utils.h"
 #include "bp_object.h"
-#include "shade.h"
+#include "bp_shade.h"
 #include <stdint.h>
 #include <string.h>
 #include <math_sse.h>
