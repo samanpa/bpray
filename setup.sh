@@ -6,8 +6,8 @@ if test -z $1; then
 fi
 
 autogen_CMDLINE="$autogen_CMDLINE --prefix=$HOME"
-CFLAGS="-I$HOME/include"
-simd_ISA=""
+CFLAGS="-I$HOME/include -mcpu=native -mtune=native -Werror"
+simd_ISA="sse2"
 error=""
 
 for param in $@; do
@@ -19,25 +19,18 @@ for param in $@; do
 	    #   a console application
 	    export LDFLAGS="-L`pwd`/lib/i686-pc-mingw32  -lgdi32 -lcomdlg32"
 	    ;;
-	bonniepc)
-	    simd_ISA=sse2
-	    export CFLAGS="-march=pentium-m $CFLAGS"
-	    ;;
 	workpc)
-	    simd_ISA=sse2
-	    export CFLAGS="-march=pentium4 $CFLAGS -Werror"
 	    export PKG_CONFIG_PATH="$HOME/lib/pkgconfig"
 	    ;;
         compute)
-            simd_ISA=sse2
             export LDFLAGS="-L$HOME/lib/"
             export CFLAGS="-march=opteron $CFLAGS"
             ;;
 	genesis)
-            simd_ISA=sse2
             export LDFLAGS="-L$HOME/lib/"
-            export CFLAGS="-march=pentium4 $CFLAGS"
             ;;
+	deutronomy)
+	    ;;
 	*)
 	    error="param not specified $param"
 	    ;;
