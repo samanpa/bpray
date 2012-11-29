@@ -23,7 +23,7 @@ static void io_init (const char *appname)
 	free (dir);
 
 	/* add every thing in the library path*/
-	bp_library_path_add (curr_scene, getenv ("Library_Path"));
+	bp_library_path_add (curr_scene, getenv ("BANNA_LIBRARY_PATH"));
 }
 
 static void ini_init (const char *filename)

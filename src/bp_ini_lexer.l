@@ -67,7 +67,7 @@ jpeg {
         return JPEG;
 }
 
-Library_Path {
+BANNA_LIBRARY_PATH {
 	return LIBRARY_PATH;
 }
 
