@@ -52,14 +52,6 @@ bp_camera_set_look_at (camera_t *camera, vector_t look_at)
 	VSET_SIZE (camera->direction, dir, dir_length);
 }
 
-
-static void
-sample ()
-{
-	sample ();
-}
-
-
 static int inited;
 static vector_t left_top, right_step, down_step;
 
