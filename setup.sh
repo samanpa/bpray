@@ -6,7 +6,7 @@ if test -z $1; then
 fi
 
 autogen_CMDLINE="$autogen_CMDLINE --prefix=$HOME"
-CFLAGS="-I$HOME/include -mcpu=native -mtune=native -Werror"
+CFLAGS="-I$HOME/include -march=native "
 simd_ISA="sse2"
 error=""
 
@@ -24,15 +24,11 @@ for param in $@; do
 	    ;;
         compute)
             export LDFLAGS="-L$HOME/lib/"
-            export CFLAGS="-march=opteron $CFLAGS"
             ;;
 	genesis)
             export LDFLAGS="-L$HOME/lib/"
             ;;
-	deutronomy)
-	    ;;
 	*)
-	    error="param not specified $param"
 	    ;;
     esac
 done
