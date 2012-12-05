@@ -12,7 +12,7 @@ CLEANFILES = $(BUILT_SOURCES) bp_script_parser.c $(srcdir)/*~
 #change optimiztion flag
 common_CFLAGS 		= -g -Wall -Wimplicit -pedantic -Wno-long-long \
 	-O3 -pipe -funroll-loops -foptimize-register-move -fgcse -fforce-addr\
-	-fomit-frame-pointer
+	-fomit-frame-pointer 
 # -fprefetch-loop-arrays 
 
 core_FILES		= bp_scene.c bp_scene.h bp_ray.c bp_ray.h bp_config.h \
@@ -44,9 +44,9 @@ libbp_ray_la_CFLAGS 	= $(common_CFLAGS)
 
 
 banna_CFLAGS  		= $(common_CFLAGS)
-banna_SOURCES 		= banna.c ui.h ui.c ui_win32.c ui_linux.c
+banna_SOURCES 		= banna.c ui.h ui.c
 banna_LDADD 		= libbp_ray.la
-banna_LDFLAGS 		= 
+banna_LDFLAGS 		= -lgd -lGL -lglut
 
 bp_test_CFLAGS 		= $(common_CFLAGS)
 bp_test_SOURCES		= bp_test.c
