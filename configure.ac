@@ -70,15 +70,10 @@ if test "x$PKG_CONFIG" = "xno"; then
    AC_MSG_ERROR([You need to install pkg-config])
 fi
 
-AC_CHECK_LIB(glib-2.0, g_mem_chunk_alloc, 
-	[
-		CFLAGS="$CFLAGS `pkg-config --cflags glib-2.0`"
-		LIBS="$LIBS `pkg-config --libs glib-2.0`"
-	],
-	[
-		AC_MSG_ERROR([You need to have glib installed.])
-	]
-)
+pkg-config --atleast-version=2.8 glib-2.0
+if [[ "x$?" != "x0" ]] ; then
+      AC_MSG_ERROR([You need to have glib installed.])
+fi
 
 AC_CHECK_LIB(pthread, pthread_mutex_init, 
 ,
@@ -92,6 +87,10 @@ AC_ARG_ENABLE(more-warnings,
 set_more_warnings="$enableval",[
     set_more_warnings=no
 ])
+
+CFLAGS=$(pkg-config  --cflags glib-2.0)
+LDFLAGS="$(pkg-config --libs glib-2.0) $LDFLAGS"
+
 AC_MSG_CHECKING(for more warnings, including -Werror)
 if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
     AC_MSG_RESULT(yes)
@@ -100,8 +99,8 @@ if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
     -Wchar-subscripts -Wmissing-declarations -Wmissing-prototypes \
     -Wnested-externs -Wpointer-arith \
     -Wcast-align -Wsign-compare \
-    -std=gnu89 \
-    $CFLAGS"
+    -std=c1x \
+    $CFLAGS" 
 
     for option in -Wno-strict-aliasing -Wno-sign-compare; do
         SAVE_CFLAGS="$CFLAGS"

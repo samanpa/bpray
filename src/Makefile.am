@@ -1,7 +1,6 @@
 EXTRA_DIST 		= ply2mesh.py
 
 bin_PROGRAMS 		= banna
-# bp_test
 lib_LTLIBRARIES 	= libbp_ray.la
 
 #force lex and yacc to generate files
@@ -10,9 +9,7 @@ BUILT_SOURCES = bp_script_parser.h bp_script_lexer.c bp_script_parser.c \
 CLEANFILES = $(BUILT_SOURCES) bp_script_parser.c $(srcdir)/*~
 
 #change optimiztion flag
-common_CFLAGS 		= -g -Wall -Wimplicit -pedantic -Wno-long-long \
-	-O3 -pipe -funroll-loops -foptimize-register-move -fgcse -fforce-addr\
-	-fomit-frame-pointer 
+common_CFLAGS 		= -g -Wall -Wimplicit -pedantic -O3 -pipe  
 # -fprefetch-loop-arrays 
 
 core_FILES		= bp_scene.c bp_scene.h bp_ray.c bp_ray.h bp_config.h \
@@ -47,9 +44,3 @@ banna_CFLAGS  		= $(common_CFLAGS)
 banna_SOURCES 		= banna.c ui.h ui.c
 banna_LDADD 		= libbp_ray.la
 banna_LDFLAGS 		= -lgd -lGL -lglut
-
-bp_test_CFLAGS 		= $(common_CFLAGS)
-bp_test_SOURCES		= bp_test.c
-bp_test_LDADD 		= libbp_ray.la
-bp_test_LDFLAGS		= -pg
-
