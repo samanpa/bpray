@@ -51,7 +51,8 @@ framebuffer_init (framebuffer_t *fb)
 	const unsigned int v_res = fb->vertical_resolution;
 	const unsigned int h_res = fb->horizontal_resolution;
 
-	/* Textures need to have a height/width equal to a power of 2 for versions of OpenGL less than 1.5 */
+	/* Textures need to have a height/width equal to a power of 2 for versions
+	   of OpenGL less than 1.5 */
 	for (i  = (1 << 31) ; i != 0; i >>= 1)
 		if (h_res & i) {
 			int j;
@@ -67,7 +68,7 @@ framebuffer_init (framebuffer_t *fb)
 			fb->canvas_height = (v_res & ~i) ? i << 1: i;
 			break;
 		}
-
+	
 	fb->canvas = NEW_0 (vector_t, fb->canvas_height * fb->canvas_width);
 }
 
@@ -132,17 +133,11 @@ gamma_correct (vector_t res_color, vector_t color, float gamma)
 	res_color [2] = pow (MIN (color [2], 1.0), gamma);
 }
  
-
-#ifdef PRODUCTION
-static volatile float render_progress = 0.0;
-#endif
-
 void 
 bp_ray_trace_packet (const ray4_t *ray, vector_t *colors, simd4i_t srcprim_id, int depth, simd4_t fdepth)
 {
 	unsigned int activeMask;
-	
-  	intersect4_t isect4;
+	intersect4_t isect4;
 
 	ASSIGN (colors [0], background);
 	ASSIGN (colors [1], background);
@@ -168,6 +163,7 @@ bp_ray_trace_packet (const ray4_t *ray, vector_t *colors, simd4i_t srcprim_id, i
 }
 
 
+static volatile float render_progress = 0.0;
 static void *
 draw_scanlines (void *data)
 {
@@ -180,10 +176,8 @@ draw_scanlines (void *data)
 
 	for (i = thread_args->start; i < end; i += 2) {
 		int j;
-#ifdef PRODUCTION
 		const unsigned int v_resolution = bp_scene_get_vertical_resolution (scene);
  		bp_report_render_progress (render_progress++ / v_resolution);
-#endif
 		for (j = 0; j < h_resolution; j+= 2) {
 			ray4_t ray4;
 			vector_t colors [4];
@@ -205,6 +199,11 @@ BP_EXPORT void
 bp_scene_draw (scene_t * scene)
 {
 	unsigned int i;
+	GTimer *timer;
+
+	timer = g_timer_new ();
+	g_timer_reset (timer);
+	g_timer_start (timer);
 
 #if 0
 	ADD (background, scene->settings.atmosphere.background,
@@ -229,6 +228,10 @@ bp_scene_draw (scene_t * scene)
 			exit(-1);
 		}
 	}
+	
+	g_timer_stop (timer);
+	gulong microseconds; /* not really usefully but needed by the timing code */
+	printf ("Drawing took %f.\n", g_timer_elapsed (timer, &microseconds));
 }
 
 void 

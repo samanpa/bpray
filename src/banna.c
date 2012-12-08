@@ -28,9 +28,6 @@ static void report_progress (float progress)
 	fflush (stdout);
 }
 
-	
-
-
 static void report (int type, const char *msg)
 {
 	switch (type) {
@@ -123,6 +120,10 @@ static void parse_args (int argc, char **argv, scene_t *scene)
 			else
 				report_error ("no parameter to --kd-tree-file");
 		}
+		else if (!strcmp (argv [i], "--gl")) {
+			++i;
+			scene->use_gl = 1;
+		}
 		else if (argv [i][0] == '-') {
 			bp_report (BP_LOG_ERROR, "ERROR: unknown option %s\n", argv [i]);
 			exit (0);
@@ -158,16 +159,18 @@ save_file (scene_t *scene, unsigned int height, unsigned int width)
 	gdImagePtr image = gdImageCreateTrueColor (width, height);
 	FILE * file  = fopen (output_filename, "wb");
 	unsigned int i, j;
+	framebuffer_t *fb = bp_scene_get_framebuffer(scene);
 
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < width; j++) {
 			vector_t color;
 			float color_val;
-			ASSIGN (color, bp_framebuffer_get_color (bp_scene_get_framebuffer (scene), i, j));
-			color_val = gdImageColorExact (image, (int) (255 * color [0]),
-								   (int) (255 * color [1]), (int) (255 * color [2]));
+			ASSIGN (color, bp_framebuffer_get_color (fb, i, j));
+			color_val = gdImageColorExact(image
+						      , (int) (255 * color [0])
+						      , (int) (255 * color [1])
+						      , (int) (255 * color [2]));
 			gdImageSetPixel (image, j, i, color_val);
-
 		}
 	}
  	gdImagePng(image, file);
@@ -188,21 +191,15 @@ report_perf (char *str)
 
 }
 
-/* #define USE_UI */
-
 int main (int argc, char **argv)
 {
 	scene_t *scene  = bp_scene_new ();
 	GTimer *timer;
-#ifdef USE_UI
-	ui_t ui;
-#endif
 	framebuffer_t *fb = bp_scene_get_framebuffer (scene);
 	gulong microseconds; /* not really usefully but needed by the timing code */
 	
 
 	bp_report_func_set (report);
- 	bp_report_set_render_progress_func (report_progress);
 
 	if (argc == 1) {
 		fprintf (stderr, "No script filename name given\n");
@@ -212,17 +209,11 @@ int main (int argc, char **argv)
 	parse_args (argc, argv, scene);
 	bp_ray_init (argv [0], ini_file, scene);
 	post_init (scene);
-
-	
-	
 	timer = g_timer_new ();
 	g_timer_start (timer);
       	if (bp_script_parse_file (scene))
 		return 1;
 
-#ifdef USE_UI
-	ui_init (&ui, fb);
-#endif
 	g_timer_stop (timer);
 	printf ("Parsing took %f.\n", g_timer_elapsed (timer, &microseconds));
 	g_timer_reset (timer);
@@ -233,32 +224,24 @@ int main (int argc, char **argv)
 	g_timer_stop (timer);
 	printf ("kd tree construction time %f.\n", g_timer_elapsed (timer, &microseconds));
 
-#ifdef USE_UI
-	while (1) {
-#endif
-		g_timer_reset (timer);
-		g_timer_start (timer);
-
-		bp_scene_draw (scene);
-	
-		g_timer_stop (timer);
-		printf ("Drawing took %f.\n", g_timer_elapsed (timer, &microseconds));
-
-#ifdef USE_UI
-		if (ui_update (&ui, fb))
-			break;
+	if (scene->use_gl) {
+		ui_t ui;
+		ui_init (&ui, scene);
+		ui_draw (&ui);
 	}
-	ui_destroy (&ui);
-#endif
-
-	save_file (scene, bp_framebuffer_get_vertical_resolution (fb),
-		   bp_framebuffer_get_horizontal_resolution (fb));
+	else {
+		bp_report_set_render_progress_func (report_progress);
+		bp_scene_draw (scene);
+		save_file (scene
+			   , bp_framebuffer_get_vertical_resolution (fb)
+			   , bp_framebuffer_get_horizontal_resolution (fb));
+	}
 
 /*   	bp_ray_destroy (scene); */
   	g_timer_destroy (timer);
 
 	
- 	report_perf ("ab");
+ 	report_perf ("abcd");
 
 	return 0;
 

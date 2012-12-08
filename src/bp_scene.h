@@ -92,6 +92,7 @@ struct scene_t {
 	kd_tree_t *kd_tree_root;
 
 	framebuffer_t fb;
+	int use_gl;
 };
 
 BP_EXPORT scene_t *
