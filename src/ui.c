@@ -4,7 +4,7 @@
 
 void draw_scene (void)
 {
-	int texid = 1;
+	GLuint texid = 1;
 	framebuffer_t* fb;
 	unsigned char* image;
 	int h, w;
@@ -93,10 +93,20 @@ void glutResize (int w, int h)
 
 void glutKeyboard (unsigned char key, int x, int y)
 {
+	const static float DELTA_DIR = 0.001;
 	switch (key)
 	{
 	case 'a':
-		curr_scene->camera.location[0] +=0.001;
+		curr_scene->camera.location[X_axis] += DELTA_DIR;
+		break;
+	case 'd':
+		curr_scene->camera.location[X_axis] -= DELTA_DIR;
+		break;
+	case 'w':
+		curr_scene->camera.location[Y_axis] += DELTA_DIR;
+		break;
+	case 's':
+		curr_scene->camera.location[Y_axis] -= DELTA_DIR;
 		break;
         case 'q':
         case 'Q':
