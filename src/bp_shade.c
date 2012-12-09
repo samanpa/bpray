@@ -9,9 +9,9 @@ static const float AIR_IOR   = 1.0003;
 		SCALE_ADD3 (res, t, normal, dir);
 
 static void 
-get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
-	   vector_t normal, vector_t color, int srcprim_id,
-	   int depth, float fdepth , vector_t scolor, vector_t dcolor)
+get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir
+	   , vector_t normal, int srcprim_id, int depth, float fdepth
+	   , vector_t color ,vector_t objcolor)
 {
 	float refl, tmp1, tmp2;
 	float cos_inc, cos_refr = 0;
@@ -22,7 +22,6 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 	float rel_ior = 0;
 	float ior_from, ior_to;
 	vector_t neg_ray_dir;
-	vector_t objcolor;
 	texture_t *texture;
 	float transmit;
 	material_t *intersect_material = get_material (i->prim_id);
@@ -30,14 +29,9 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 	
 	texture  = intersect_material->texture;
 	transmit = texture->pigment->transmit;
-	texture->pigment->get_color (texture->pigment, i, objcolor);
 
 	NEG (neg_ray_dir, raydir);
 	cos_inc = DOT (normal, neg_ray_dir);
-
-	MUL (color, dcolor, objcolor);
-	ADD (color, color, scolor);
-	ADD (color, color, scene->settings.atmosphere.ambient_light);
 
 	/* test to see if we are coming from inside an object or outside */
 	if (cos_inc >= 0) {
@@ -50,8 +44,8 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 		}
 		mult = -1;
 		/*
-		  since we are inside the object, angle of incidence is different
-		  -angle is faster than doing another dot product
+		  since we are inside the object, angle of incidence is 
+		  different -angle is faster than doing another dot product
 		*/
 		cos_inc = -cos_inc;
 		ior_from = intersect_material->ior;
@@ -136,82 +130,62 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 }
 
 
-void
-bp_light_shade (const scene_t *scene, const intersect_t *isect,
-		const vector_t raydir, vector_t normal, vector_t scolor,
-		vector_t dcolor
-)
+static void
+phong_shade (const scene_t *scene, const intersect_t *isect,
+	     const vector_t raydir, vector_t normal, vector_t color,
+	     vector_t objcolor)
 {
 	light_t *light_itr;
 	texture_t *texture;
 	vector_t neg_raydir;
-	int is_metallic;
-	int do_specular;
-	int i;
+	vector_t phong_i;
+	int i = 0;
 
 	NEG (neg_raydir, raydir);
 	texture = get_material (isect->prim_id)->texture;
 
-        /**
-	 * FIXME: There are too many access to the material
-	 *         and this compounded by the indirection involved. 
-	 */ 
+        /* FIXME: There are too many access to the material
+	 *         and this compounded by the indirection involved. */ 
 	texture->normal->get_normal (isect, normal);
 
-	is_metallic = texture->finish->options & OPTION_METALLIC;
-	do_specular = NOT_ZERO1 (texture->finish->specular);
-
-	VSET_ALL (dcolor, 0.0);
-	VSET_ALL (scolor, 0.0);
-
-	i = 1;
-	for (light_itr = scene->lights [0]; light_itr; light_itr = scene->lights [i ++]) {
-		float    light_diffuse = 0.0 , light_spec = 0.0;
-		vector_t light_dir, reflected_ray;
-		float dot;
-		double t;
+	VSET_ALL (phong_i, 0.0);
+	for (light_itr = scene->lights [i]; light_itr; light_itr = scene->lights [++i]) {
+		vector_t light_dir, refl_light;
 		ray_t ray;
 		
-		light_spec = light_diffuse = 0.0f;
-      
 		/* find a unit vector from the object to the light */
 		SUB (light_dir, light_itr->pos, isect->pos);
-
- 		t = MAG (light_dir);
+ 		double t = MAG (light_dir);
 		SMUL (light_dir, 1/t, light_dir);
-
 		
 		/* see if object is in the shade */
 		ASSIGN (ray.orig, isect->pos);
 		ASSIGN (ray.dir, light_dir);
-		if (bp_kd_tree_has_occluder (scene->kd_tree_root, &ray, t)) {
-			goto illumination_end;
-		}
+		if (bp_kd_tree_has_occluder (scene->kd_tree_root, &ray, t))
+			continue;
 
-		dot = DOT (normal, light_dir);
-
-		/* FIXME: we have this code bcos normal may point inwards */
- 		light_diffuse = (dot > 0) ? dot : -dot;
+		float dot = DOT (normal, light_dir);
+		/* FIXME: do fabs because normal may turn inwards */
+ 		float diffuse = fabs(dot)* texture->finish->diffuse;
+		float phong_f = diffuse;
 
 		/* specular lighting */
-		if (do_specular) {
-			SCALE_SUB3 (reflected_ray, 2 * dot, normal, light_dir);
-
-			dot = DOT (neg_raydir, reflected_ray);
+		if (texture->finish->shininess != 0.f) {
+			SCALE_SUB3 (refl_light, 2 * dot, normal, light_dir);
+			dot = DOT (neg_raydir, refl_light);
  			if (dot > 0) { 
-				light_spec = pow (dot, texture->finish->shininess);
-				
-				/* FIXME: color of metal goes here.*/
+				vector_t scolor;
+				float specular = texture->finish->specular *
+					pow (dot, texture->finish->shininess);
+				phong_f += specular;
 			}
 		}
-
-	illumination_end:
-		SCALE_ADD3 (scolor, light_spec, light_itr->color, scolor);
-		SCALE_ADD3 (dcolor, light_diffuse, light_itr->color, dcolor);
+		SCALE_ADD3(phong_i, phong_f, light_itr->color, phong_i); 
 	}
 
-	SMUL (scolor, texture->finish->specular, scolor);
-	SMUL (dcolor, texture->finish->diffuse, dcolor);
+	texture->pigment->get_color (texture->pigment, isect, objcolor);
+	MUL (color, phong_i, objcolor);
+	ADD (color, color, scene->settings.atmosphere.ambient_light);
 }
 
 #include "math_sse.h"
@@ -237,7 +211,7 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
 } while (0)
 
 #define shade(isect4, ray4, n) do {					\
- 	vector_t scolor, dcolor;					\
+ 	vector_t objcolor;					        \
 	vector_t normal;						\
 	intersect_t isect;						\
 	get_isect (isect, isect4, n);					\
@@ -245,11 +219,11 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
 		ray_t ray;						\
 		get_ray (ray, ray4, n);					\
 		/* do phong shading */					\
-		bp_light_shade (scene, &isect, ray.dir, normal,		\
-				scolor, dcolor);			\
+		phong_shade (scene, &isect, ray.dir, normal,		\
+			     colors[n], objcolor);			\
 		get_color (scene, &isect, ray.dir, normal,		\
-			   colors [n], simd4i_get##n (srcprim), depth,	\
-			   simd4_get##n (fdepth), scolor, dcolor);	\
+			   simd4i_get##n (srcprim), depth,		\
+			   simd4_get##n (fdepth), colors[n], objcolor);	\
 	}								\
 } while(0)
 	
@@ -271,15 +245,15 @@ void bp_shade_packet (const scene_t * scene, intersect4_t *isect4
 void bp_shade (const scene_t * scene, intersect_t *isect, const ray_t *ray, 
 	       vector_t color, const int depth, const float fdepth, unsigned int srcprim_id)
 {
-	vector_t scolor, dcolor;
+	vector_t objcolor;
 	vector_t normal;
 
 	/* find the intersection point */
  	SCALE_ADD3 (isect->pos, isect->t, ray->dir, ray->orig);
 
 	/* do phong shading */
-   	bp_light_shade (scene, isect, ray->dir, normal, scolor, dcolor);
+   	phong_shade (scene, isect, ray->dir, normal, color, objcolor);
 
-    	get_color (scene, isect, ray->dir, normal, color, srcprim_id
-		   , depth, fdepth, scolor, dcolor);
+    	get_color (scene, isect, ray->dir, normal, srcprim_id
+		   , depth, fdepth, color, objcolor);
 }
