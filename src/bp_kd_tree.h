@@ -32,6 +32,13 @@ struct kd_tree_t {
 	uint32_t num_nodes;
 };
 
+#define kd_tree_node_is_leaf(node) (node->data & (unsigned int) (1 << 31))
+#define kd_tree_node_get_axis(node) (node->data & 0x3)
+#define kd_offset(node) (node->data & 0x7FFFFFC)
+#define kd_tree_node_get_left_child(node) (kd_tree_node_t*)((unsigned long)node + kd_offset (node))
+#define kd_tree_node_get_right_child(node) (kd_tree_node_t*)((unsigned long)node + kd_offset (node) + 8)
+#define kd_tree_node_get_primitives(node,  item_list) (unsigned int *)((unsigned long)item_list + kd_offset(node))
+
 kd_tree_t *
 bp_kd_tree_init (int num_objects, object_t *objects, const char *filename);
 
@@ -43,4 +50,11 @@ bp_kd_tree_packet_find_nearest (const kd_tree_t *tree, const ray4_t *ray, inters
 
 int
 bp_kd_tree_has_occluder (const kd_tree_t *tree, const ray_t *ray, double t_min);
+
+
+typedef struct {
+	vector_t lower;
+	vector_t upper;
+} aabb_t;
+
 #endif

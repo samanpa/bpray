@@ -5,11 +5,6 @@
 #include "bp_io.h"
 
 typedef struct {
-	vector_t lower;
-	vector_t upper;
-} aabb_t;
-
-typedef struct {
 	float pos;
 	float cost;
 	unsigned short axis;
@@ -128,13 +123,6 @@ event_list_sort (event_list_t *el) {
 	qsort (el->events, el->num_events, sizeof (event_t), compare_events);
 }
 
-
-#define kd_tree_node_is_leaf(node) (node->data & (unsigned int) (1 << 31))
-#define kd_tree_node_get_axis(node) (node->data & 0x3)
-#define kd_offset(node) (node->data & 0x7FFFFFC)
-#define kd_tree_node_get_left_child(node) (kd_tree_node_t*)((unsigned long)node + kd_offset (node))
-#define kd_tree_node_get_right_child(node) (kd_tree_node_t*)((unsigned long)node + kd_offset (node) + 8)
-#define kd_tree_node_get_primitives(node,  item_list) (unsigned int *)((unsigned long)item_list + kd_offset(node))
 
 static inline void
 kd_tree_init (kd_tree_t *tree)
@@ -667,66 +655,18 @@ kd_tree_construct (kd_tree_t *tree, int tree_pos, aabb_t voxel, int num_prims, i
 }
 
 
-/* #define USE_WALD_TRAVERSAL */
-
-#ifdef USE_WALD_TRAVERSAL
-typedef struct {
-	kd_tree_node_t *node;
-	float t_near;
-	float t_far;
-} ray_segment_stack_t;
-#else
 typedef struct {
 	kd_tree_node_t *node;
 	double t;
 	vector_t pb;
 	int prev;
 } stack_elem_t;
-#endif
 typedef struct {
 	kd_tree_node_t *node;
 	simd4_t near4;
 	simd4_t far4;
 } simd4_stack_elem_t;
 	
-static inline void
-ray_box_intersect (const vector_t corner0, const vector_t corner1, const ray_t *ray, 
-		   const int *ray_dir_negative, const vector_t inv_dir, float *t0, float *t1)
-{
-	float txmin, txmax;
-	float tymin, tymax;
-	float tzmin, tzmax;
-
-	if (ray_dir_negative [X_axis]) {
-		txmin = (corner1 [X_axis] - ray->orig [X_axis]) * inv_dir [X_axis];
-		txmax = (corner0 [X_axis] - ray->orig [X_axis]) * inv_dir [X_axis];
-	} else {
-		txmin = (corner0 [X_axis] - ray->orig [X_axis]) * inv_dir [X_axis];
-		txmax = (corner1 [X_axis] - ray->orig [X_axis]) * inv_dir [X_axis];
-	}
-
-	if (ray_dir_negative [Y_axis]) {
-		tymin = (corner1 [Y_axis] - ray->orig [Y_axis]) * inv_dir [Y_axis];
-		tymax = (corner0 [Y_axis] - ray->orig [Y_axis]) * inv_dir [Y_axis];
-	} else {
-		tymin = (corner0 [Y_axis] - ray->orig [Y_axis]) * inv_dir [Y_axis];
-		tymax = (corner1 [Y_axis] - ray->orig [Y_axis]) * inv_dir [Y_axis];
-	} 
-
-	if (ray_dir_negative [Z_axis]) {
-		tzmin = (corner1 [Z_axis] - ray->orig [Z_axis]) * inv_dir [Z_axis];
-		tzmax = (corner0 [Z_axis] - ray->orig [Z_axis]) * inv_dir [Z_axis];
-	} else {
-		tzmin = (corner0 [Z_axis] - ray->orig [Z_axis]) * inv_dir [Z_axis];
-		tzmax = (corner1 [Z_axis] - ray->orig [Z_axis]) * inv_dir [Z_axis];
-	} 
-	
-	/* Find the biggest of txmin, tymin, tzmin */
-	*t0 = MAX3 (txmin, tymin, tzmin);
-
-	/* Find the smallest of txmax, tymax, tzmax */
-	*t1 = MIN3 (txmax, tymax, tzmax);
-}
 
 #define MAX_STACK_SIZE 50
 
@@ -739,14 +679,9 @@ bp_kd_tree_find_nearest (const kd_tree_t *tree, const ray_t *ray, intersect_t *i
 	int negative_dir [3];
 	vector_t inv_dir;
 
-#ifdef USE_WALD_TRAVERSAL
-	ray_segment_stack_t stack [MAX_STACK_SIZE];
-	int stack_end = 1;
-#else
 	kd_tree_node_t *far_child;
 	stack_elem_t stack [MAX_STACK_SIZE];
 	unsigned int entry_pt, exit_pt;
-#endif
 
 	vector3_inverse (inv_dir, ray->dir);
 
@@ -762,71 +697,6 @@ bp_kd_tree_find_nearest (const kd_tree_t *tree, const ray_t *ray, intersect_t *i
 
 	curr_node = (kd_tree_node_t *)tree->nodes;
 
-#ifdef USE_WALD_TRAVERSAL
-	stack [0].node = curr_node;
-	stack [0].t_far = t_far;
-	stack [0].t_near = t_near;
-
-	while (1) {
-		while (!kd_tree_node_is_leaf (curr_node)) {
-			float split_val = curr_node->u.split_plane;
-			int axis = kd_tree_node_get_axis(curr_node);
-			/* signed distance to the splitting plane */
-			float t = (split_val - ray->orig [axis]) * inv_dir [axis];
-
-			int negative = negative_dir [axis];
-			/* case 1: t <= t_near <= t_far  -> cull front side */
-			int backside = (t <= t_near);
-			/* case 2: t_near <= t_far <= t  -> cull back side */
-			int frontside = (t >= t_far);
-			
-			int skip = backside | frontside;
-
-			bp_profiler_add_to_counter ('a', 1);
-			
-			if (!skip) {
-				if (negative) {
-					stack [stack_end].node = kd_tree_node_get_left_child (curr_node);
-					curr_node = kd_tree_node_get_right_child (curr_node);
-				}
-				else {
-					stack [stack_end].node = kd_tree_node_get_right_child (curr_node);
-					curr_node = kd_tree_node_get_left_child (curr_node);
-				}
-				stack [stack_end].t_near = t;
-				stack [stack_end].t_far  = t_far;
-				t_far  = t;
-				stack_end ++;
-			} else {
-				if (negative ^ frontside)
-					curr_node = kd_tree_node_get_left_child (curr_node);
-				else
-					curr_node = kd_tree_node_get_right_child (curr_node);
-			}
-		}
-
-#define MIN_CONTRIB 0.03
-
-		isect->t = stack [stack_end].t_far  + MIN_CONTRIB;
-		leaves = kd_tree_node_get_primitives (curr_node, tree->prims);
-		i = curr_node->u.num_prims;
-
-		while (i --) {
-			prim_ray_intersect (leaves [i], ray, isect);
-		}
-
-		if (isect->prim_id != -1)
-			return;
-		
-		if (stack_end == 0)
-			return;
-		
-		stack_end --;
-		curr_node = stack [stack_end].node;
-		t_near = stack [stack_end].t_near;
-		t_far = stack [stack_end].t_far;
-	}
-#else 
 	entry_pt    = 0;
 	stack [0].t = t_near;
 	if (t_near >= 0.0)
@@ -936,14 +806,11 @@ bp_kd_tree_find_nearest (const kd_tree_t *tree, const ray_t *ray, intersect_t *i
 		curr_node = stack [exit_pt].node;
 		exit_pt   = stack [entry_pt].prev;
 	}
-#endif
 	
 	return;
 }
 
 #include <math_sse.h>
-
-/* #define DNUM_INSTABILITY */
 
 void
 bp_kd_tree_packet_find_nearest (const kd_tree_t *tree, const ray4_t *ray4, intersect4_t *isect4)
@@ -1127,14 +994,9 @@ bp_kd_tree_has_occluder (const kd_tree_t *tree, const ray_t *ray, double t_max)
 	int negative_dir [3];
 	vector_t inv_dir;
 	
-#ifdef USE_WALD_TRAVERSAL
-	ray_segment_stack_t stack [MAX_STACK_SIZE];
-	int stack_end = 1;
-#else
 	kd_tree_node_t *far_child;
 	stack_elem_t stack [MAX_STACK_SIZE];
 	unsigned int entry_pt, exit_pt;
-#endif
 
 	vector3_inverse (inv_dir, ray->dir);
 
@@ -1150,63 +1012,6 @@ bp_kd_tree_has_occluder (const kd_tree_t *tree, const ray_t *ray, double t_max)
 
 	curr_node = (kd_tree_node_t *)tree->nodes;
 
-#ifdef USE_WALD_TRAVERSAL
-	stack [0].node = curr_node;
-	stack [0].t_far = t_far;
-	stack [0].t_near = t_near;
-
-	while (1) {
-		while (!kd_tree_node_is_leaf (curr_node)) {
-			float split_val = curr_node->u.split_plane;
-			int axis = kd_tree_node_get_axis(curr_node);
-			/* signed distance to the splitting plane */
-			float t = (split_val - ray->orig [axis]) * inv_dir [axis];
-
-			int negative = negative_dir [axis];
-			/* case 1: t <= t_near <= t_far  -> cull front side */
-			int backside = (t <= t_near);
-			/* case 2: t_near <= t_far <= t  -> cull back side */
-			int frontside = (t >= t_far);
-			
-			int skip = backside | frontside;
-			
-			if (!skip) {
-				if (negative) {
-					stack [stack_end].node = kd_tree_node_get_left_child (curr_node);
-					curr_node = kd_tree_node_get_right_child (curr_node);
-				}
-				else {
-					stack [stack_end].node = kd_tree_node_get_right_child (curr_node);
-					curr_node = kd_tree_node_get_left_child (curr_node);
-				}
-				stack [stack_end].t_near = t;
-				stack [stack_end].t_far  = t_far;
-				t_far  = t;
-				stack_end ++;
-			} else {
-				if (negative ^ frontside)
-					curr_node = kd_tree_node_get_left_child (curr_node);
-				else
-					curr_node = kd_tree_node_get_right_child (curr_node);
-			}
-		}
-
-		leaves = kd_tree_node_get_primitives (curr_node, tree->prims);
-		i = curr_node->u.num_prims;
-		while (i --) {
-			if (prim_ray_has_intersect (leaves [i], ray, t_max))
-					return 1;
-		}
-
-		if (stack_end == 0)
-			return 0;
-		
-		stack_end --;
-		curr_node = stack [stack_end].node;
-		t_near = stack [stack_end].t_near;
-		t_far = stack [stack_end].t_far;
-	}
-#else
 	entry_pt    = 0;
 	stack [0].t = t_near;
 	
@@ -1307,7 +1112,6 @@ bp_kd_tree_has_occluder (const kd_tree_t *tree, const ray_t *ray, double t_max)
 		curr_node = stack [exit_pt].node;
 		exit_pt   = stack [entry_pt].prev;
 	}
-#endif
 
 	return 0;
 	

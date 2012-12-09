@@ -1,4 +1,4 @@
-AC_INIT(bp_ray, 0.2.5)
+AC_INIT(bp_ray, 0.2.8)
 
 #to get the host call early or we get warning
 AC_CANONICAL_SYSTEM
@@ -29,6 +29,7 @@ esac
 #libtool
 AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
+AC_SUBST([AM_LIBTOOLFLAGS], [--silent])
 
 AC_ARG_ENABLE(simd,
 	 [--enable-simd Enables the use of simd on this arch ],
@@ -88,7 +89,7 @@ set_more_warnings="$enableval",[
     set_more_warnings=no
 ])
 
-CFLAGS=$(pkg-config  --cflags glib-2.0)
+CFLAGS=" -std=c1x $(pkg-config  --cflags glib-2.0) $CFLAGS"
 LDFLAGS="$(pkg-config --libs glib-2.0) $LDFLAGS"
 
 AC_MSG_CHECKING(for more warnings, including -Werror)
@@ -99,7 +100,6 @@ if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
     -Wchar-subscripts -Wmissing-declarations -Wmissing-prototypes \
     -Wnested-externs -Wpointer-arith \
     -Wcast-align -Wsign-compare \
-    -std=c1x \
     $CFLAGS" 
 
     for option in -Wno-strict-aliasing -Wno-sign-compare; do

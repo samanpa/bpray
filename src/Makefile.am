@@ -10,14 +10,13 @@ CLEANFILES = $(BUILT_SOURCES) bp_script_parser.c $(srcdir)/*~
 
 #change optimiztion flag
 common_CFLAGS 		= -g -Wall -Wimplicit -pedantic -O3 -pipe  
-# -fprefetch-loop-arrays 
 
 core_FILES		= bp_scene.c bp_scene.h bp_ray.c bp_ray.h bp_config.h \
 	config.h bp_camera.c bp_camera.h bp_types.h 
 
 util_FILES		= bp_io.h bp_io.c bp_memory.h bp_memory.c bp_utils.h \
 	bp_utils.c bp_math.h bp_math_generic.h bp_math.c math_sse.h bp_debug.h \
-	bp_debug.c bp_kd_tree.c bp_kd_tree.h 
+	bp_debug.c bp_kd_tree.c bp_kd_tree.h bp_kd_tree_wald.c
 
 parse_FILES		= bp_script.h bp_script_parser.y bp_script_lexer.l \
 	bp_ini_lexer.l bp_ini_parser.y
