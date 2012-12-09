@@ -10,18 +10,19 @@ static const float AIR_IOR   = 1.0003;
 
 static void 
 get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
-	   vector_t normal, vector_t objcolor, vector_t color, int srcprim_id,
+	   vector_t normal, vector_t color, int srcprim_id,
 	   int depth, float fdepth , vector_t scolor, vector_t dcolor)
 {
 	float refl, tmp1, tmp2;
 	float cos_inc, cos_refr = 0;
-	int hit_backside = 0, do_refraction = 0;
+	float mult = 1.;
+	int do_refraction = 0;
 	ray_t ray;
 	vector_t ncolor;
-	vector_t filtered_color;
 	float rel_ior = 0;
 	float ior_from, ior_to;
 	vector_t neg_ray_dir;
+	vector_t objcolor;
 	texture_t *texture;
 	float transmit;
 	material_t *intersect_material = get_material (i->prim_id);
@@ -29,6 +30,7 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 	
 	texture  = intersect_material->texture;
 	transmit = texture->pigment->transmit;
+	texture->pigment->get_color (texture->pigment, i, objcolor);
 
 	NEG (neg_ray_dir, raydir);
 	cos_inc = DOT (normal, neg_ray_dir);
@@ -40,13 +42,13 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 	/* test to see if we are coming from inside an object or outside */
 	if (cos_inc >= 0) {
 		ior_to = intersect_material->ior;
-		ior_from = (srcprim_id != -1) ? get_material (srcprim_id)->ior : AIR_IOR;	
+		ior_from = (srcprim_id != -1) ? get_material (srcprim_id)->ior : AIR_IOR;
 	}
 	else {
  		if (ZERO1 (transmit)) {
  			return;
 		}
-		hit_backside = 1;
+		mult = -1;
 		/*
 		  since we are inside the object, angle of incidence is different
 		  -angle is faster than doing another dot product
@@ -61,10 +63,10 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 
 
 	if (NOT_ZERO1 (ior_to)) {
+		vector_t filtered_color;
 		SMUL (filtered_color, texture->pigment->filter, objcolor);
 		rel_ior = ior_from / ior_to;
 		tmp1 = 1 - rel_ior * rel_ior *  (1.0 - cos_inc * cos_inc);
-	
 		
 		if (tmp1 > 0.0 ) {
 
@@ -108,6 +110,7 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 	} else {
 		refl = texture->finish->reflection;
 	}
+
 	
 	/* do reflection :
 	      the color variable holds the color due to refraction
@@ -121,12 +124,8 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 
 	if (do_refraction) {
 		ASSIGN (ray.orig, i->pos);
-		tmp1 = rel_ior * cos_inc - cos_refr;
-		if (hit_backside)
-			LIN_COMB3 (ray.dir, -tmp1, normal, rel_ior, raydir);
-		else
-			LIN_COMB3 (ray.dir, tmp1, normal, rel_ior, raydir);
-		
+		tmp1 = mult * (rel_ior * cos_inc - cos_refr);
+		LIN_COMB3 (ray.dir, tmp1, normal, rel_ior, raydir);
 		bp_ray_trace (&ray, ncolor, i->prim_id, depth + 1, transmit * fdepth);
 #if 0
   		SCALE_ADD3 (color, transmit, ncolor, color);
@@ -139,7 +138,7 @@ get_color (const scene_t *scene, const intersect_t *i, const vector_t raydir,
 
 void
 bp_light_shade (const scene_t *scene, const intersect_t *isect,
-		const vector_t raydir, vector_t normal, vector_t objcolor, vector_t scolor,
+		const vector_t raydir, vector_t normal, vector_t scolor,
 		vector_t dcolor
 )
 {
@@ -153,6 +152,12 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
 	NEG (neg_raydir, raydir);
 	texture = get_material (isect->prim_id)->texture;
 
+        /**
+	 * FIXME: There are too many access to the material
+	 *         and this compounded by the indirection involved. 
+	 */ 
+	texture->normal->get_normal (isect, normal);
+
 	is_metallic = texture->finish->options & OPTION_METALLIC;
 	do_specular = NOT_ZERO1 (texture->finish->phong);
 
@@ -165,7 +170,6 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
 		vector_t light_dir, reflected_ray;
 		float dot;
 		double t;
-
 		ray_t ray;
 		
 		light_spec = light_diffuse = 0.0f;
@@ -173,14 +177,13 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
 		/* find a unit vector from the object to the light */
 		SUB (light_dir, light_itr->pos, isect->pos);
 
- 		t = SIZE (light_dir);
+ 		t = MAG (light_dir);
 		SMUL (light_dir, 1/t, light_dir);
 
 		
 		/* see if object is in the shade */
 		ASSIGN (ray.orig, isect->pos);
 		ASSIGN (ray.dir, light_dir);
-
 		if (bp_kd_tree_has_occluder (scene->kd_tree_root, &ray, t)) {
 			goto illumination_end;
 		}
@@ -217,9 +220,9 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
         (i).u = simd4_get ## id ((i4)->u); \
         (i).v = simd4_get ## id ((i4)->v); \
         (i).t = simd4_get ## id ((i4)->t); \
-        (i).pos [0] = simd4_get ## id ((i4)->pos [0]); \
-        (i).pos [1] = simd4_get ## id ((i4)->pos [1]); \
-        (i).pos [2] = simd4_get ## id ((i4)->pos [2]); \
+        (i).pos [X_axis] = simd4_get ## id ((i4)->pos [X_axis]); \
+        (i).pos [Y_axis] = simd4_get ## id ((i4)->pos [Y_axis]); \
+        (i).pos [Z_axis] = simd4_get ## id ((i4)->pos [Z_axis]); \
         (i).prim_id = simd4i_get ## id ((i4)->prim_id); \
 } while (0)
 
@@ -227,108 +230,56 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
         r.orig [X_axis] = simd4_get ## id (r4->orig [X_axis]); \
 	r.orig [Y_axis] = simd4_get ## id (r4->orig [Y_axis]); \
 	r.orig [Z_axis] = simd4_get ## id (r4->orig [Z_axis]); \
-\
+							       \
 	r.dir [X_axis] = simd4_get ## id (r4->dir [X_axis]); \
 	r.dir [Y_axis] = simd4_get ## id (r4->dir [Y_axis]); \
 	r.dir [Z_axis] = simd4_get ## id (r4->dir [Z_axis]); \
 } while (0)
 
-
-void bp_shade_packet (const scene_t * scene, intersect4_t *isect4, const ray4_t *ray4, 
-  	       vector_t *colors, int depth, const simd4_t fdepth, const simd4i_t srcprim)
-{
-	vector_t objcolor, scolor, dcolor;
-	texture_t *texture;
-	vector_t normal;
-	intersect_t isect;
-	ray_t ray;
+#define shade(isect4, ray4, n) do {					\
+ 	vector_t scolor, dcolor;					\
+	vector_t normal;						\
+	intersect_t isect;						\
+	get_isect (isect, isect4, n);					\
+	if (isect.prim_id != -1) {					\
+		ray_t ray;						\
+		get_ray (ray, ray4, n);					\
+		/* do phong shading */					\
+		bp_light_shade (scene, &isect, ray.dir, normal,		\
+				scolor, dcolor);			\
+		get_color (scene, &isect, ray.dir, normal,		\
+			   colors [n], simd4i_get##n (srcprim), depth,	\
+			   simd4_get##n (fdepth), scolor, dcolor);	\
+	}								\
+} while(0)
 	
+
+void bp_shade_packet (const scene_t * scene, intersect4_t *isect4
+		      , const ray4_t *ray4, vector_t *colors, int depth
+		      , const simd4_t fdepth, const simd4i_t srcprim)
+{
  	/* find the intersection point */
 	simd4_vector_SCALE_ADD (isect4->pos, isect4->t, ray4->dir, ray4->orig);
 
 	/*-------------*/
-	get_isect (isect, isect4, 0);
-	if (isect.prim_id != -1) {
-		get_ray (ray, ray4, 0);
-		texture = get_material (isect.prim_id)->texture; 
-		texture->normal->get_normal (&isect, normal);
-		texture->pigment->get_color (texture->pigment, &isect, objcolor);
-		
-		/* do phong shading */
-		bp_light_shade (scene, &isect, ray.dir, normal, objcolor, scolor, dcolor);
-
-		get_color (scene, &isect, ray.dir, normal, objcolor, colors [0], simd4i_get0 (srcprim), depth, 
-		   simd4_get0 (fdepth), scolor, dcolor);
-	}
-
-	/*-------------*/
-	get_isect (isect, isect4, 1);
-	if (isect.prim_id != -1) {
-		get_ray (ray, ray4, 1);
-		texture = get_material (isect.prim_id)->texture; 
-		texture->normal->get_normal (&isect, normal);
-		texture->pigment->get_color (texture->pigment, &isect, objcolor);
-		
-		/* do phong shading */
-		bp_light_shade (scene, &isect, ray.dir, normal, objcolor, scolor, dcolor);
-		
-		get_color (scene, &isect, ray.dir, normal, objcolor, colors [1], simd4i_get1 (srcprim), depth, 
-			   simd4_get1 (fdepth), scolor, dcolor);
-	}
-
-	/*-------------*/
-	get_isect (isect, isect4, 2);
-	if (isect.prim_id != -1) {
-		get_ray (ray, ray4, 2);
-		texture = get_material (isect.prim_id)->texture; 
-		texture->normal->get_normal (&isect, normal);
-		texture->pigment->get_color (texture->pigment, &isect, objcolor);
-		
-		/* do phong shading */
-		bp_light_shade (scene, &isect, ray.dir, normal, objcolor, scolor, dcolor);
-		
-		get_color (scene, &isect, ray.dir, normal, objcolor, colors [2], simd4i_get2 (srcprim), depth, 
-			   simd4_get2 (fdepth), scolor, dcolor);
-	}
-		
-	/*-------------*/
-	get_isect (isect, isect4, 3);
-	if (isect.prim_id != -1) {
-		get_ray (ray, ray4, 3);
-		texture = get_material (isect.prim_id)->texture; 
-		texture->normal->get_normal (&isect, normal);
-		texture->pigment->get_color (texture->pigment, &isect, objcolor);
-
-		/* do phong shading */
-		bp_light_shade (scene, &isect, ray.dir, normal, objcolor, scolor, dcolor);
-		
-		get_color (scene, &isect, ray.dir, normal, objcolor, colors [3], simd4i_get3 (srcprim), depth, 
-			   simd4_get3 (fdepth), scolor, dcolor);
-	}
+	shade(isect4, ray4, 0);
+	shade(isect4, ray4, 1);
+	shade(isect4, ray4, 2);
+	shade(isect4, ray4, 3);
 }
 
 void bp_shade (const scene_t * scene, intersect_t *isect, const ray_t *ray, 
 	       vector_t color, const int depth, const float fdepth, unsigned int srcprim_id)
 {
-	vector_t objcolor, scolor, dcolor;
-	texture_t *texture;
+	vector_t scolor, dcolor;
 	vector_t normal;
-
 
 	/* find the intersection point */
  	SCALE_ADD3 (isect->pos, isect->t, ray->dir, ray->orig);
 
-        /**
-	 * FIXME: There are too many access to the material
-	 *         and this compounded by the indirection involved. 
-	 */ 
-   	texture = get_material (isect->prim_id)->texture; 
-	texture->normal->get_normal (isect, normal);
-	texture->pigment->get_color (texture->pigment, isect, objcolor);
-
 	/* do phong shading */
-   	bp_light_shade (scene, isect, ray->dir, normal, objcolor, scolor, dcolor);
+   	bp_light_shade (scene, isect, ray->dir, normal, scolor, dcolor);
 
-    	get_color (scene, isect, ray->dir, normal, objcolor, color, srcprim_id, depth, fdepth
-		   , scolor, dcolor);
+    	get_color (scene, isect, ray->dir, normal, color, srcprim_id
+		   , depth, fdepth, scolor, dcolor);
 }
