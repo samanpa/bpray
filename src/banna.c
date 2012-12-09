@@ -2,6 +2,7 @@
 #include <gd.h>
 #include <config.h>
 #include <ui.h>
+#include <string.h>
 
 static void report_progress (float progress)
 {
@@ -55,7 +56,7 @@ static void usage (int flags)
 		 "Usage:\n"
 		 "   bp_ray [options] ini_file\n"
 		 "Options:\n"
-		 "   --num-threads n --num-samples n --script-file <file> --output-file <file>  \n"
+		 "   --num-threads n --num-samples n --ini-file <file> --output-file <file>  \n"
 		);
 	if (flags == 1)
 		exit (1);
@@ -67,8 +68,8 @@ static void report_error (char *str)
 	usage (1);
 }
 
-static char *ini_file;
 static char *script_file;
+static char *ini_file;
 static char *output_filename;
 
 static void parse_args (int argc, char **argv, scene_t *scene)
@@ -86,12 +87,12 @@ static void parse_args (int argc, char **argv, scene_t *scene)
 			else
 				report_error ("no parameter given to --output-file");
 		}
-		else if (!strcmp (argv [i], "--script-file")) {
+		else if (!strcmp (argv [i], "--ini-file")) {
 			++i;
 			if (i < argc)
-				script_file = argv [i];
+				ini_file = argv [i];
 			else
-				report_error ("no parameter given to --script-file");
+				report_error ("no parameter given to --ini-file");
 		}
 		else if (!strcmp (argv [i], "--num-threads")) {
 			++i;
@@ -129,7 +130,7 @@ static void parse_args (int argc, char **argv, scene_t *scene)
 			exit (0);
 		}
 		else {
-			ini_file = argv [i];
+			script_file = argv [i];
 		}
 	}
 }
@@ -150,6 +151,10 @@ void post_init (scene_t *scene)
 			output_filename [len - 2] = 'n';
 			output_filename [len - 1] = 'g';
 		}
+	}
+	else {
+		printf("No input file given \n");
+		exit(0);
 	}
 }
 
