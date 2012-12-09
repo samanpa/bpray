@@ -159,7 +159,7 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
 	texture->normal->get_normal (isect, normal);
 
 	is_metallic = texture->finish->options & OPTION_METALLIC;
-	do_specular = NOT_ZERO1 (texture->finish->phong);
+	do_specular = NOT_ZERO1 (texture->finish->specular);
 
 	VSET_ALL (dcolor, 0.0);
 	VSET_ALL (scolor, 0.0);
@@ -199,7 +199,7 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
 
 			dot = DOT (neg_raydir, reflected_ray);
  			if (dot > 0) { 
-				light_spec = pow (dot, texture->finish->phong_size);
+				light_spec = pow (dot, texture->finish->shininess);
 				
 				/* FIXME: color of metal goes here.*/
 			}
@@ -210,7 +210,7 @@ bp_light_shade (const scene_t *scene, const intersect_t *isect,
 		SCALE_ADD3 (dcolor, light_diffuse, light_itr->color, dcolor);
 	}
 
-	SMUL (scolor, texture->finish->phong, scolor);
+	SMUL (scolor, texture->finish->specular, scolor);
 	SMUL (dcolor, texture->finish->diffuse, dcolor);
 }
 

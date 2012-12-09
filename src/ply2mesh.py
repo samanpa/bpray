@@ -59,7 +59,7 @@ def read_faces (file):
     for i in range (num_faces):
         arr = file.readline ().split ()
         if len (arr) != 4 or arr [0] != '3':
-            print "Wrong number of faces on triangle", arr [0]
+            print ("Wrong number of faces on triangle ", arr [0])
             exit (1)
         v1 = int (arr [1])
         v2 = int (arr [2])
@@ -105,10 +105,9 @@ def read_header (file):
     curr_element = None
     while 1:
         items = file.readline ().split ()
-
         if items [0] == 'end_header':
             if num_vertices == 0 or num_faces == 0:
-                print "could not find number of vertices or faces"
+                print ("could not find number of vertices or faces")
                 exit (1)
             return
         elif items [0] == 'element':
@@ -119,7 +118,7 @@ def read_header (file):
             elif items [1] == 'face':
                 globals()['num_faces'] = int (items [2])
             else:
-                print 'element', items [1]
+                print ('element', items [1])
         elif items [0] == 'property':
             elements [curr_element].append (items [2])
 
@@ -127,19 +126,19 @@ def read_file (infilename, outfilename):
     file = open (infilename, 'r')
 
     read_header (file)
-    print "Finished reading header"
+    print ("Finished reading header")
     read_vertices (file)
-    print "Finished reading vertices"
+    print ("Finished reading vertices")
     read_faces (file)
-    print "Finished reading faces"
+    print ("Finished reading faces")
     post_process ()
-    print "Finished post processing"
+    print ("Finished post processing")
 
     file.close ()
     file = open (outfilename, 'w')
 
     print_pov (file)
-    print "Finished printing POV file"
+    print ("Finished printing POV file")
 
 if __name__ == "__main__":
     read_file (sys.argv [1], sys.argv [1].replace ("ply", "msh"))

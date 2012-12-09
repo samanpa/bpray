@@ -166,8 +166,8 @@ void smooth_triangle_init (vector_t v0, vector_t v1, vector_t v2,
 %token NORMALS
 %token OUTPUT_FILE_NAME
 %token OUTPUT_FILE_TYPE
-%token PHONG
-%token PHONG_SIZE
+%token SPECULAR
+%token SHININESS
 %token PIGMENT
 %token PNG
 %token POSITION
@@ -583,11 +583,11 @@ finish
 			case DIFFUSE:
 				$<finish>$->diffuse    = l->data->fval;
 				break;
-			case PHONG:
-				$<finish>$->phong      = l->data->fval;
+			case SPECULAR:
+				$<finish>$->specular   = l->data->fval;
 				break;
-			case PHONG_SIZE:
-				$<finish>$->phong_size = l->data->val;
+			case SHININESS:
+				$<finish>$->shininess = l->data->val;
 				break;
 			case FRESNEL:
 				$<finish>$->options   |= OPTION_FRESNEL;
@@ -632,11 +632,11 @@ finish_item
          | DIFFUSE fnum {
 		 MAKE_FLOAT ($<list>$, DIFFUSE, $2);
 	 }
-         | PHONG fnum {
-		 MAKE_FLOAT ($<list>$, PHONG, $2);
+         | SPECULAR fnum {
+		 MAKE_FLOAT ($<list>$, SPECULAR, $2);
 	 }
-         | PHONG_SIZE NUM {
-		 MAKE_INT ($<list>$, PHONG_SIZE, $2);
+         | SHININESS NUM {
+		 MAKE_INT ($<list>$, SHININESS, $2);
 	 }
          | FRESNEL bool {
 		 MAKE_INT ($<list>$, FRESNEL, $2);

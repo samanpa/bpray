@@ -205,12 +205,12 @@ Output_File_Type {
 	return OUTPUT_FILE_TYPE;
 }
 
-phong {
-        return PHONG;
+specular {
+        return SPECULAR;
 }
 
-phong_size {
-        return PHONG_SIZE;
+shininess {
+        return SHININESS;
 }
 
 pigment {

@@ -38,36 +38,39 @@
 
 #define DOT(op1, op2) ((op1)[0]*(op2)[0] + (op1)[1]*(op2)[1] + (op1)[2]*(op2)[2])
 
-#define COPY(src, dest) do {\
-         (dest)[0] = (src)[0]; (dest)[1] = (src)[1]; (dest)[2] = (src)[2];\
-          } while (0)
+#define MAG(v) (sqrt((double)((v)[0]*(v)[0]+(v)[1]*(v)[1]+(v)[2]*(v)[2])))
 
-#define SIZE(v) (sqrt((double)((v)[0]*(v)[0]+(v)[1]*(v)[1]+(v)[2]*(v)[2])))
+#define ASSIGN(dest, src) do {\
+        (dest)[0] = (src)[0]; (dest)[1] = (src)[1]; (dest)[2] = (src)[2];\
+} while (0)
+
+#define ASSIGN4(dest, src) do {\
+         (dest)[0] = (src)[0]; (dest)[1] = (src)[1]; \
+         (dest)[2] = (src)[2]; (dest)[3] = (src)[3]; \
+} while (0)
+
+#define ASSIGN5(dest, src) do {\
+         (dest)[0] = (src)[0]; (dest)[1] = (src)[1]; (dest)[2] = (src)[2];\
+         (dest)[3] = (src)[3]; (dest)[4] = (src)[4];\
+} while (0)
+
+#define COPY(src, dest) do {		\
+	  (dest)[0] = (src)[0]; (dest)[1] = (src)[1]; (dest)[2] = (src)[2]; \
+} while (0)
 
 #define VRESIZE(v, size) do { SMUL (v, size/MAG(v), v);} while (0)
 
 #define VSET_SIZE(res, v, size) do {SMUL (res, size/MAG (v), v);} while (0)
 
-#define MAG(v) (sqrt ((double)((v)[0]*(v)[0]+(v)[1]*(v)[1]+(v)[2]*(v)[2])))
-
-#define ASSIGN(dest, src) do {\
-         (dest)[0] = (src)[0]; (dest)[1] = (src)[1]; (dest)[2] = (src)[2];\
-          } while (0)
-
-#define ASSIGN4(dest, src) do {\
-         (dest)[0] = (src)[0]; (dest)[1] = (src)[1]; \
-         (dest)[2] = (src)[2]; (dest)[3] = (src)[3]; \
-          } while (0)
-
-#define ASSIGN5(dest, src) do {\
-         (dest)[0] = (src)[0]; (dest)[1] = (src)[1]; (dest)[2] = (src)[2];\
-         (dest)[3] = (src)[3]; (dest)[4] = (src)[4];\
-          } while (0)
 
 #define CROSS(c,a,b) do {\
           (c)[0]=(a)[1]*(b)[2]-(a)[2]*(b)[1]; \
           (c)[1]=(a)[2]*(b)[0]-(a)[0]*(b)[2]; \
           (c)[2]=(a)[0]*(b)[1]-(a)[1]*(b)[0]; \
+          } while (0)
+
+#define COPY3(dest, src) do {\
+         (dest)[0] = (src)[0]; (dest)[1] = (src)[1]; (dest)[2] = (src)[2];\
           } while (0)
 
 #define COPY4(src, dest) do {\
@@ -111,5 +114,4 @@
         } while ( 0)
 
 #define VSET_ALL(v, val) {v [0] = val; v [1] = val; v [2] = val;}
-
 #define ZERO4(v) {v [0] = 0.0; v [1] = 0.0; v [2] = 0.0; v [3] = 0.0;}

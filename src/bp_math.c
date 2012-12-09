@@ -5,7 +5,6 @@ vector_t y = {0, 1, 0};
 vector_t z = {0, 0, 1};
 vector_t origin = {0, 0, 0};
 
-
 #ifdef USE_FAST_INV_SQRT
 static float
 fast_inverse_sqrt(float x)
@@ -23,7 +22,7 @@ fast_inverse_sqrt(float x)
 void vector_normalize (vector_t src, vector_t dst) {
 	float mag;
 #ifndef USE_FAST_INV_SQRT
-	mag = 1/SIZE (src);
+	mag = 1/MAG(src);
 #else
 	mag = fast_inverse_sqrt (src [0] * src [0] + 
 				 src [1] * src [1] +

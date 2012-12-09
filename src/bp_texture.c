@@ -19,8 +19,8 @@ bp_finish_init (finish_t *finish)
 	ASSIGN (finish->ambient, origin);
 	finish->reflection = 0.0;
 	finish->diffuse    = 0.6;
-	finish->phong      = 0.2;
-	finish->phong_size = 40;
+	finish->specular   = 0.2;
+	finish->shininess  = 40;
 	finish->options    = 0;
 
 }

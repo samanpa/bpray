@@ -62,7 +62,7 @@ static inline void init_ray_computer (const camera_t *camera)
 		float mag;
 		inited = 1;
 
-		mag = SIZE (camera->right);
+		mag = MAG (camera->right);
 
 		/* find the left top corner of the screen */
 		ADD (left_top, camera->location, camera->direction);

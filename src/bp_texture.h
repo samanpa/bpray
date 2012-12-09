@@ -15,8 +15,8 @@ typedef struct {
 	vector_t ambient;
 	float reflection;
 	float diffuse;
-	float phong;
-	int   phong_size;
+	float specular;
+	int   shininess;
 	int   options;
 } finish_t;
 
