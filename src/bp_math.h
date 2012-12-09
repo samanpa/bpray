@@ -9,6 +9,8 @@
 
 #define SMALL_VAL 0.0000001
 
+#define M_PI 3.14159265358979323846264338327
+
 #define ZERO1(f) (f < SMALL_VAL)
 #define NOT_ZERO1(f) (f > SMALL_VAL)
 #define NOT_ZERO(f) (fabs (f) > SMALL_VAL)
