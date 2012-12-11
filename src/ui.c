@@ -51,8 +51,7 @@ void draw_scene (void)
 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 	glBegin (GL_QUADS);
-	glColor3f(1,0,0);
-        glTexCoord2f (0,1);
+	glTexCoord2f (0,1);
         glVertex3f (-5, -5, 5);
 
         glTexCoord2f (1, 1);
