@@ -6,10 +6,10 @@
 
 void bp_camera_init (camera_t *camera)
 {
-	COPY (origin, camera->location);
-	COPY (z, camera->direction);
-	COPY (y, camera->up);
-	COPY (y, camera->sky);
+	COPY3 (camera->location, origin);
+	COPY3 (camera->direction, z);
+	COPY3 (camera->up, y);
+	COPY3 (camera->sky, y);
 	SMUL (camera->right, 4.0/3.0, x);
 }
 
@@ -29,6 +29,7 @@ bp_camera_set_angle (camera_t *camera, float angle)
 
 	direction_length  = 0.5 * MAG (camera->right) / tan (angle / 360 * M_PI);
 	VRESIZE (camera->direction, direction_length);
+	camera->angle = angle;
 }
 
 void
@@ -43,10 +44,10 @@ bp_camera_set_look_at (camera_t *camera, vector_t look_at)
 
 	SUB   (dir, look_at, camera->location);
 
-	CROSS   (camera->right, camera->sky, dir);
+	CROSS   (camera->right, dir, camera->sky);
 	VRESIZE (camera->right, right_length);
 
-	CROSS   (camera->up, dir, camera->right);
+	CROSS   (camera->up, camera->right, dir);
 	VRESIZE (camera->up, up_length);
 
 	VSET_SIZE (camera->direction, dir, dir_length);
